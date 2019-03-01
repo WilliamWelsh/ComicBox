@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>ComicBox</title>
+    <!-- Compiled and minified CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+
+    <!-- Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+    <style>
+    .sidenav li>a {
+        color: #e0e0e0 !important;
+        font-weight: normal !important;
+    }
+    .sidenav .navTitle {
+        font-weight: bold !important;
+    }
+    </style>
+</head>
+<body class="grey darken-3">
+    <nav class="nav-extended grey darken-4">
+        <div class="nav-wrapper">
+            <a href="#" class="brand-logo center">ComicBox</a>
+            <!-- Side bar for other publishers -->
+            <a href="#" data-target="options-menu" class="sidenav-trigger show-on-large"><i class="material-icons">menu</i></a>
+        </div>
+        <div class="nav-content">
+            <ul class="tabs tabs-transparent">
+            <li class="tab"><a class="active" href="#" onclick="showAllComics(this)">All</a></li>
+            <li class="tab"><a href="#" onclick="showCertainComics(this, 'MARVEL COMICS', 'Marvel')">Marvel</a></li>
+            <li class="tab"><a href="#" onclick="showCertainComics(this, 'DC COMICS', 'DC')">DC</a></li>
+            <li class="tab"><a href="#" onclick="showCertainComics(this, 'DARK HORSE COMICS', 'Dark Horse')">Dark Horse</a></li>
+            <li class="tab"><a href="#" onclick="showCertainComics(this, 'IDW PUBLISHING', 'IDW')">IDW</a></li>
+            <li class="tab"><a href="#" onclick="displayAvailableDates(this)">Change Date</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <ul class="sidenav grey darken-4" id="options-menu">
+        <li><a class="navTitle">Publishers</a></li>
+        <!-- <li><a href="#" onclick="showCertainComics('BOOM! STUDIOS', 'BOOM! Studios')">BOOM! Studios</a></li>
+        <li><a href="#" onclick="showCertainComics('DC COMICS', 'DC')">Image</a></li>
+        <li><a href="#" onclick="showCertainComics('DC COMICS', 'DC')">Valiant</a></li> -->
+    </ul>
+
+    <div class="center white-text">
+      <p id="countText">Loading comics...</p>
+      <p id="currentDateText">Loading...</p>
+    </div>
+
+    <div class="row" style="width: 80%;height: 100%;max-width: 100%;margin: auto;">
+        <div id="comicDisplay">
+        </div>
+        <div id="dates" class="center">
+        </div>
+    </div>
+
+    <script>
+        var request = require("request");
+
+        var viewingDate;
+        var mostRecentDate;
+        var monthNames = ["Jan", "Feb", "Mar", "Apr", "May","June","July", "Aug", "Sep", "Oct", "Nov","Dec"];
+        function formatDate(input) {
+            var date = new Date(input);
+            return monthNames[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
+        }
+
+        var datesDiv = document.getElementById("dates");
+        var comicsDiv = document.getElementById("comicDisplay");
+
+        var countText = document.getElementById("countText");
+        var currentDateText = document.getElementById("currentDateText");
+
+        // Initialize sidebar (hamburger menu)
+        var elem = document.querySelector('.sidenav');
+        var instance = M.Sidenav.init(elem, {});
+
+        // Make nav buttons not active and make the one that got clicked active
+        function setButtonActive(activeButton) {
+            var buttons = document.getElementsByClassName("tab");
+            Array.prototype.forEach.call(buttons, function(button) {
+                button.firstChild.className = "";
+            });
+            activeButton.className = "active";
+        }
+
+        function hideDateAndShowComics() {
+            datesDiv.style.display = "none";
+            currentDateText.style.display = "none";
+            comicsDiv.style.display = "block";
+            countText.style.display = "block";
+        }
+
+        function hideComicsAndShowDates() {
+            datesDiv.style.display = "block";
+            currentDateText.style.display = "block";
+            comicsDiv.style.display = "none";
+            countText.style.display = "none";
+        }
+
+        // Make all comics visible
+        function showAllComics(button) {
+            if (button != null) {
+                setButtonActive(button);
+            }
+            hideDateAndShowComics();
+            var allComics = comicsDiv.children;
+            Array.prototype.forEach.call(allComics, function(comic){
+                comic.style.display = "block";
+            });
+            // Update the count text
+            //var comics = document.getElementById("comicDisplay").childElementCount;
+            //document.getElementById("countText").innerHTML = "There are " + comics + " comics coming out " + formatDate(viewingDate) + ".<br>More comics may appear as the date gets closer.";
+            updateCount(comicsDiv.childElementCount, "");
+        }
+
+        // Only make certain comics visible
+        function showCertainComics(button, className, publisher) {
+            setButtonActive(button);
+            hideDateAndShowComics();
+            showAllComics();
+            className = 'col s12 m6 l3 ' + className;
+
+            var allComics = document.getElementById("comicDisplay").children;
+            Array.prototype.forEach.call(allComics, function(comic){
+                if (comic.className != className){
+                    comic.style.display = "none";
+                }
+            });
+
+            updateCount(document.getElementsByClassName(className).length, publisher);
+        }
+
+        // Update the text at the top of how many comics there are
+        function updateCount(comicCount, publisher) {
+            countText.innerHTML = "There are " + comicCount + " " + publisher + " comics";// coming out this week.<br>More comics may appear as the date gets closer.";
+            console.log(mostRecentDate);
+            if (viewingDate == mostRecentDate) {
+                countText.innerHTML += " coming out this week.<br>More comics may appear as the date gets closer.";
+            }
+            else {
+                countText.innerHTML += " that came out on " + formatDate(viewingDate) + ".";
+            }
+        }
+
+        // Show the date buttons
+        function displayAvailableDates(button) {
+            setButtonActive(button);
+            hideComicsAndShowDates();
+        }
+
+        // Print all the comics
+        var url = "https://api.shortboxed.com/comics/v1/new";
+
+        //var url = "https://api.shortboxed.com/comics/v1/release_date/2016-02-17";
+
+        // This week's comics
+        function postComics(url) {
+            request({
+                url: url,
+                json: true
+            }, function (error, response, body) {
+                const options = document.getElementById("options-menu");
+                if (viewingDate == null) {
+                    viewingDate = body.comics[0].release_date;
+                    mostRecentDate = viewingDate;
+                }
+                currentDateText.innerHTML = "Currently viewing comics for " + formatDate(mostRecentDate) + ".";
+                body.comics.forEach(e => {
+                    addComic(e.title, e.description, e.price, e.publisher, e.diamond_id);
+                    if (e.publisher == "IMAGE COMICS" && document.getElementsByClassName("IMAGE_COMICS").length == 0) {
+                        createPublisherOption(options, "IMAGE COMICS", "Image", "IMAGE_COMICS");
+                    }
+
+                    if (e.publisher == "BOOM! STUDIOS" && document.getElementsByClassName("BOOM!_STUDIOS").length == 0) {
+                        createPublisherOption(options, "BOOM! STUDIOS", "BOOM! Studios", "BOOM!_STUDIOS");
+                    }
+
+                    if (e.publisher == "VALIANT ENTERTAINMENT LLC" && document.getElementsByClassName("VALIANT_ENTERTAINMENT_LLC").length == 0) {
+                        createPublisherOption(options, "VALIANT ENTERTAINMENT LLC", "Valiant", "VALIANT_ENTERTAINMENT_LLC");
+                    }
+                });
+
+                showAllComics();
+            });
+        }
+
+        postComics("https://api.shortboxed.com/comics/v1/new");
+
+        // Fill available dates
+        request({
+            url: "https://api.shortboxed.com/comics/v1/releases/available",
+            json: true
+        }, function (error, response, body) {
+            body.dates.forEach(date => {
+                var a = document.createElement('a');
+                //a.id = date;
+                a.className = "grey darken-2 waves-effect waves-light btn col s12 m2 l2";
+                a.style = "margin: 5px; float: none !important; text-transform: none !important; padding: 0 !important"
+                a.innerHTML = formatDate(date);
+                a.onclick = function () {
+                    while (comicsDiv.firstChild) {
+                        comicsDiv.removeChild(comicsDiv.firstChild);
+                    }
+                    countText.innerHTML = "Loading comics..."
+                    currentDateText.innerHTML = "Currently viewing comics for " + formatDate(date) + ".";
+                    viewingDate = date;
+                    postComics("https://api.shortboxed.com/comics/v1/release_date/" + date);
+                };
+                datesDiv.insertBefore(a, dates.firstChild);
+            });
+        });
+
+        function createPublisherOption(options, publisher, text, className) {
+            var li = document.createElement('li');
+            li.className = className + " sidenav-close";
+            var a = document.createElement('a');
+            a.href = '#';
+            a.onclick = function() { showCertainComics(publisher, text); };
+            //a.onclick = "showCertainComics(''" + publisher, + "'', ''" + text + "'')";
+            a.innerHTML = text;
+            li.appendChild(a);
+            options.appendChild(li);
+        }
+
+        function createParagraphNode(text) {
+            var p = document.createElement('p');
+            p.appendChild(document.createTextNode(text));
+            return p;
+        }
+
+        function addComic(title, description, price, publisher, diamond_id){
+            const div = document.createElement('div');
+            div.className = 'col s12 m6 l3 ' + publisher;
+
+            const card = document.createElement('div');
+            card.className = 'card horizontal grey darken-1 white-text';
+
+            // The image
+            const image = document.createElement('div');
+            image.className = 'card-image';
+            const src = document.createElement('img');
+            src.src = 'https://dak9jkjr5v1f7.cloudfront.net/images/' + diamond_id + '.thumbnail.png';
+            image.appendChild(src);
+
+            card.appendChild(image);
+
+            const cardStacked = document.createElement('div');
+            cardStacked.className = 'card-stacked';
+
+            const content = document.createElement('div');
+            content.className = 'card-content';
+            content.style.padding = '15px';
+            content.appendChild(createParagraphNode(title + ' (' + price + ')'));
+            //content.appendChild(createParagraphNode(price));
+            content.appendChild(createParagraphNode(publisher));
+
+            cardStacked.appendChild(content);
+
+            card.appendChild(cardStacked);
+
+            div.appendChild(card);
+
+            document.getElementById("comicDisplay").appendChild(div);
+        }
+
+    </script>
+</body>
+</html>
